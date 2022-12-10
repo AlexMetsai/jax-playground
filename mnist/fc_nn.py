@@ -4,7 +4,7 @@ Train a fully connect neural network on MNIST digit dataset.
 
 import jax
 import jax.numpy as jnp
-from jax import random, vmap
+from jax import grad, jit, vmap, random
 from jax.scipy.special import logsumexp
 from sklearn.datasets import load_digits
 
@@ -42,13 +42,25 @@ batch_predict = vmap(predict, in_axes=(None, 0))
 
 
 def one_hot(x, bits, dtype=jnp.float32):
-  return jnp.array(x[:, None] == jnp.arange(bits), dtype)
+    return jnp.array(x[:, None] == jnp.arange(bits), dtype)
 
 
 def accuracy(weights, images_flat, labels):
-  target_class = jnp.argmax(labels, axis=1)
-  predicted_class = jnp.argmax(batch_predict(weights, images_flat), axis=1)
-  return jnp.mean(predicted_class == target_class)
+    target_class = jnp.argmax(labels, axis=1)
+    predicted_class = jnp.argmax(batch_predict(weights, images_flat), axis=1)
+    return jnp.mean(predicted_class == target_class)
+
+
+def loss(weights, images_flat, targets):
+    preds = batch_predict(weights, images_flat)
+    return -jnp.mean(preds * targets)
+
+
+@jit
+def update(weights, x, y):
+    grads = grad(loss)(weights, x, y)
+    return [(w - step_size * dw, b - step_size * db)
+        for (w, b), (dw, db) in zip(weights, grads)]
 
 
 def data_loader(images_flat, labels, batch_size):
