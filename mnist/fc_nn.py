@@ -4,7 +4,7 @@ Train a fully connect neural network on MNIST digit dataset.
 
 import jax
 import jax.numpy as jnp
-from jax import random
+from jax import random, vmap
 from jax.scipy.special import logsumexp
 from sklearn.datasets import load_digits
 
@@ -44,3 +44,28 @@ def predict(weights, image):
     last_layer_w, _last_layer_b = weights[-1]
     logits = jnp.dot(last_layer_w, activation) + _last_layer_b
     return logits - logsumexp(logits)
+
+
+batch_predict = vmap(predict, in_axes=(None, 0))
+
+
+def data_loader(batch_size):
+    """
+    Both TensorFlow and PyTorch offer superb data loaders, but I don't want
+    to rely on these packages for the moment, hence the custom data loader.
+    """
+    mnist_data = load_digits()
+    images_flat, labels = mnist_data["data"], mnist_data["target"]
+
+    # padding for last batch
+    pad_len = batch_size - len(images_flat) % batch_size
+    images_flat = jnp.concatenate((images_flat, images_flat[:pad_len]))
+    labels = jnp.concatenate((labels, labels[:pad_len]))
+
+    # arrange in batches
+    num_batches = int(len(images_flat) / batch_size)
+    images_flat = images_flat.reshape(batch_size, num_batches, -1)
+    labels = labels.reshape(batch_size, num_batches, -1)
+
+    for imgs, labels in zip(images_flat, labels):
+        yield imgs, labels
