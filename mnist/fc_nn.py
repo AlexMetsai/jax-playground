@@ -1,5 +1,5 @@
 """
-Train a fully connect neural network on MNIST digit dataset.
+Train a fully connect neural network on the MNIST digit dataset.
 """
 
 import jax
@@ -76,8 +76,8 @@ def data_loader(images_flat, labels, batch_size):
 
     # arrange in batches
     num_batches = int(len(images_flat) / batch_size)
-    images_flat = images_flat.reshape(batch_size, num_batches, -1)
-    labels = labels.reshape(batch_size, num_batches, -1)
+    images_flat = images_flat.reshape(num_batches, batch_size, -1)
+    labels = labels.reshape(num_batches, batch_size, -1)
 
     for imgs, labels in zip(images_flat, labels):
         yield imgs, labels
