@@ -60,7 +60,7 @@ def loss(weights, images_flat, targets):
 def update(weights, x, y):
     grads = grad(loss)(weights, x, y)
     return [(w - step_size * dw, b - step_size * db)
-        for (w, b), (dw, db) in zip(weights, grads)]
+            for (w, b), (dw, db) in zip(weights, grads)]
 
 
 def data_loader(images_flat, labels, batch_size):
@@ -97,3 +97,13 @@ train_labels = one_hot(mnist.train_labels(), 10)
 test_images = mnist.test_images()
 test_images = test_images.reshape(test_images.shape[0], -1)
 test_labels = one_hot(mnist.test_labels(), 10)
+
+# Train model
+for epoch in range(epochs):
+    for x, y in data_loader(train_images, train_labels, batch_size=batch_size):
+        weights = update(weights, x, y)
+        temp = weights
+    train_acc = accuracy(weights, train_images, train_labels)
+    test_acc = accuracy(weights, test_images, test_labels)
+    print(f"Training accuracy: {train_acc}")
+    print(f"Testing accruacy: {test_acc}")
