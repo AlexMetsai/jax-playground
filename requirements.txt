@@ -1,4 +1,4 @@
 jax[cpu]
-scikit-learn
 pandas
 flake8
+mnist
