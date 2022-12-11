@@ -4,9 +4,9 @@ Train a fully connect neural network on MNIST digit dataset.
 
 import jax
 import jax.numpy as jnp
+import mnist
 from jax import grad, jit, vmap, random
 from jax.scipy.special import logsumexp
-from sklearn.datasets import load_digits
 
 
 jax.config.update('jax_platform_name', 'cpu')  # disable irrelevant gpu warning
@@ -90,7 +90,10 @@ batch_size = 128
 num_targets = 10
 weights = init_network_weights(dims, random.PRNGKey(0))
 
-# Prepare data
-mnist_data = load_digits()
-images_flat, labels = mnist_data["data"], mnist_data["target"]
-labels = one_hot(labels, 10)
+# Load data
+train_images = mnist.train_images()
+train_images = train_images.reshape(train_images.shape[0], -1)
+train_labels = one_hot(mnist.train_labels(), 10)
+test_images = mnist.test_images()
+test_images = test_images.reshape(test_images.shape[0], -1)
+test_labels = one_hot(mnist.test_labels(), 10)
