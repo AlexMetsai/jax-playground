@@ -94,30 +94,31 @@ def data_loader(images_flat, labels, batch_size):
         yield imgs, labels
 
 
-epochs = 10
-batch_size = 128
-num_targets = 10
+def train(epochs, batch_size):
+    # Load data
+    train_images = mnist.train_images()
+    train_images = train_images.reshape(train_images.shape[0], -1).astype(float)
+    train_labels = one_hot(mnist.train_labels(), 10)
+    test_images = mnist.test_images()
+    test_images = test_images.reshape(test_images.shape[0], -1).astype(float)
+    test_labels = one_hot(mnist.test_labels(), 10)
 
-# Load data
-train_images = mnist.train_images()
-train_images = train_images.reshape(train_images.shape[0], -1).astype(float)
-train_labels = one_hot(mnist.train_labels(), 10)
-test_images = mnist.test_images()
-test_images = test_images.reshape(test_images.shape[0], -1).astype(float)
-test_labels = one_hot(mnist.test_labels(), 10)
+    # Initiate model
+    model = FullyConnected(
+        dims=[784, 512, 512, 10],
+        step_size=0.01
+    )
 
-# Initiate model
-model = FullyConnected(
-    dims=[784, 512, 512, 10],
-    step_size=0.01
-)
+    # Train model
+    for epoch in range(epochs):
+        for x, y in data_loader(train_images, train_labels, batch_size=batch_size):
+            model.update(x, y)
+        train_acc = model.accuracy(train_images, train_labels)
+        test_acc = model.accuracy(test_images, test_labels)
+        print(f"Epoch: {epoch}")
+        print(f"Training accuracy: {train_acc}")
+        print(f"Testing accruacy: {test_acc}")
 
-# Train model
-for epoch in range(epochs):
-    for x, y in data_loader(train_images, train_labels, batch_size=batch_size):
-        model.update(x, y)
-    train_acc = model.accuracy(train_images, train_labels)
-    test_acc = model.accuracy(test_images, test_labels)
-    print(f"Epoch: {epoch}")
-    print(f"Training accuracy: {train_acc}")
-    print(f"Testing accruacy: {test_acc}")
+
+if __name__ == "__main__":
+    train(epochs=10, batch_size=128)
