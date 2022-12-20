@@ -2,6 +2,8 @@
 Train a fully connect neural network on the MNIST digit dataset.
 """
 
+from functools import partial
+
 import jax
 import jax.numpy as jnp
 import mnist
@@ -51,13 +53,18 @@ class FullyConnected:
         preds = batch_predict(weights, images_flat)
         return -jnp.mean(preds * targets)
 
-    # @jit
     def update(self, x, y):
-        grads = grad(self.loss)(self.weights, x, y, self.batch_predict)
-        self.weights = [
-            (w - self.step_size * dw, b - self.step_size * db)
-            for (w, b), (dw, db) in zip(self.weights, grads)
-        ]
+        self.weights = _update(self.loss, self.batch_predict, self.step_size, self.weights, x, y)
+
+
+@partial(jit, static_argnums=(0, 1, 2,))
+def _update(loss, batch_predict, step_size, weights, x, y):
+    grads = grad(loss)(weights, x, y, batch_predict)
+    weights = [
+        (w - step_size * dw, b - step_size * db)
+        for (w, b), (dw, db) in zip(weights, grads)
+    ]
+    return weights
 
 
 def one_hot(x, bits, dtype=jnp.float32):
@@ -88,7 +95,6 @@ epochs = 10
 batch_size = 128
 num_targets = 10
 
-
 # Load data
 train_images = mnist.train_images()
 train_images = train_images.reshape(train_images.shape[0], -1).astype(float)
@@ -109,5 +115,6 @@ for epoch in range(epochs):
         model.update(x, y)
     train_acc = model.accuracy(train_images, train_labels)
     test_acc = model.accuracy(test_images, test_labels)
+    print(f"Epoch: {epoch}")
     print(f"Training accuracy: {train_acc}")
     print(f"Testing accruacy: {test_acc}")
