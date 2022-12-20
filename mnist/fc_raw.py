@@ -1,5 +1,8 @@
 """
 Train a fully connect neural network on the MNIST digit dataset.
+
+Going the hardcore way initially by using low-level building functions and
+avoiding the usage of the NN package (for starts only).
 """
 
 from functools import partial
