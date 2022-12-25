@@ -23,7 +23,7 @@ def relu(x):
 
 class FullyConnected:
     def __init__(self, dims, step_size):
-        self.weights = self.init_network_weights(dims, random.PRNGKey(0))
+        self.params = self.init_network_params(dims, random.PRNGKey(0))
         self.step_size = step_size
         self.batch_predict = vmap(self.predict, in_axes=(None, 0))
 
@@ -31,43 +31,43 @@ class FullyConnected:
         w_key, b_key = random.split(key)
         return scale * random.normal(w_key, (n, m)), scale * random.normal(b_key, (n,))
 
-    def init_network_weights(self, dims, key):
+    def init_network_params(self, dims, key):
         keys = random.split(key, len(dims))
         return [self.init_weights_and_biases(m, n, k) for m, n, k in zip(dims[:-1], dims[1:], keys)]
 
     @staticmethod
-    def predict(weights, image):
+    def predict(params, image):
         """Defining for a single sample, batches are handled with jax.vamp"""
         activation = image
-        for w, b in weights[:-1]:
+        for w, b in params[:-1]:
             output = jnp.dot(w, activation) + b
             activation = relu(output)
-        last_layer_w, _last_layer_b = weights[-1]
+        last_layer_w, _last_layer_b = params[-1]
         logits = jnp.dot(last_layer_w, activation) + _last_layer_b
         return logits - logsumexp(logits)
 
     def accuracy(self, images_flat, labels):
         target_class = jnp.argmax(labels, axis=1)
-        predicted_class = jnp.argmax(self.batch_predict(self.weights, images_flat), axis=1)
+        predicted_class = jnp.argmax(self.batch_predict(self.params, images_flat), axis=1)
         return jnp.mean(predicted_class == target_class)
 
     @staticmethod
-    def loss(weights, images_flat, targets, batch_predict):
-        preds = batch_predict(weights, images_flat)
+    def loss(params, images_flat, targets, batch_predict):
+        preds = batch_predict(params, images_flat)
         return -jnp.mean(preds * targets)
 
     def update(self, x, y):
-        self.weights = _update(self.loss, self.batch_predict, self.step_size, self.weights, x, y)
+        self.params = _update(self.loss, self.batch_predict, self.step_size, self.params, x, y)
 
 
 @partial(jit, static_argnums=(0, 1, 2,))
-def _update(loss, batch_predict, step_size, weights, x, y):
-    grads = grad(loss)(weights, x, y, batch_predict)
-    weights = [
+def _update(loss, batch_predict, step_size, params, x, y):
+    grads = grad(loss)(params, x, y, batch_predict)
+    params = [
         (w - step_size * dw, b - step_size * db)
-        for (w, b), (dw, db) in zip(weights, grads)
+        for (w, b), (dw, db) in zip(params, grads)
     ]
-    return weights
+    return params
 
 
 def one_hot(x, bits, dtype=jnp.float32):
